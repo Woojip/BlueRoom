@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BlueRoom - VR Experience</title>
+  <meta name="description" content="A 3D VR scene viewable on Quest 2 and Web browsers">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      overflow: hidden;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #1a1a2e;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      color: white;
+    }
+
+    #loading.hidden {
+      display: none;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(255, 255, 255, 0.2);
+      border-top-color: #00d4ff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    #error {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #ff4444;
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      z-index: 10000;
+      display: none;
+    }
+
+    #ui-overlay {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 15px 25px;
+      border-radius: 12px;
+      color: white;
+      text-align: center;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    #ui-overlay h3 {
+      margin: 0 0 10px 0;
+      font-size: 14px;
+      color: #00d4ff;
+    }
+
+    #ui-overlay p {
+      margin: 0;
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    .key-hint {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 4px 10px;
+      border-radius: 6px;
+      margin: 2px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Loading screen -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <p>Loading VR Scene...</p>
+  </div>
+
+  <!-- Error message -->
+  <div id="error"></div>
+
+  <!-- UI Overlay for controls hint -->
+  <div id="ui-overlay">
+    <h3>🎮 Controls</h3>
+    <p>
+      <span class="key-hint">W</span> Forward
+      <span class="key-hint">S</span> Backward
+      <span class="key-hint">A</span> Left
+      <span class="key-hint">D</span> Right
+    </p>
+    <p style="margin-top: 8px; font-size: 11px;">Mouse drag to look around</p>
+  </div>
+
+  <!-- Custom VR Button -->
+  <button id="vr-button" onclick="enterVR()">
+    🥽 Enter VR
+  </button>
+
+  <style>
+    #vr-button {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 1000;
+      background: linear-gradient(135deg, #6c5ce7, #00cec9);
+      color: white;
+      border: none;
+      padding: 15px 25px;
+      border-radius: 50px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(108, 92, 231, 0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    #vr-button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 25px rgba(108, 92, 231, 0.6);
+    }
+
+    #vr-button:active {
+      transform: scale(0.98);
+    }
+  </style>
+
+  <!-- Load A-Frame first -->
+  <script>
+    // Error handling
+    window.onerror = function (msg, url, line) {
+      document.getElementById('error').style.display = 'block';
+      document.getElementById('error').innerHTML = 'Error: ' + msg + '<br>Line: ' + line;
+      document.getElementById('loading').classList.add('hidden');
+    };
+  </script>
+
+  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+
+  <script>
+    // Check if A-Frame loaded
+    if (typeof AFRAME === 'undefined') {
+      document.getElementById('error').style.display = 'block';
+      document.getElementById('error').textContent = 'A-Frame failed to load. Check your internet connection.';
+      document.getElementById('loading').classList.add('hidden');
+    }
+  </script>
+
+  <a-scene id="scene" vr-mode-ui="enabled: true" renderer="antialias: true">
+
+    <!-- Sky -->
+    <a-sky color="#1a1a2e"></a-sky>
+
+    <!-- Lighting -->
+    <a-light type="ambient" color="#606080" intensity="0.5"></a-light>
+    <a-light type="directional" color="#ffffff" intensity="0.8" position="1 4 2"></a-light>
+    <a-light type="point" color="#00d4ff" intensity="0.5" position="0 3 0"></a-light>
+
+    <!-- Ground -->
+    <a-plane position="0 0 0" rotation="-90 0 0" width="50" height="50" color="#2a2a4a">
+    </a-plane>
+
+    <!-- Grid lines on ground -->
+    <a-box position="0 0.01 0" width="50" height="0.02" depth="0.05" color="#00d4ff" opacity="0.5"></a-box>
+    <a-box position="0 0.01 0" width="0.05" height="0.02" depth="50" color="#00d4ff" opacity="0.5"></a-box>
+
+    <!-- CHARACTER -->
+    <a-entity id="character" position="0 0 -3">
+      <!-- Body -->
+      <a-cylinder position="0 0.9 0" radius="0.3" height="1" color="#4a90d9">
+      </a-cylinder>
+
+      <!-- Head -->
+      <a-sphere position="0 1.65 0" radius="0.25" color="#f5d0c5">
+      </a-sphere>
+
+      <!-- Eyes -->
+      <a-sphere position="-0.08 1.7 0.2" radius="0.04" color="#333333"></a-sphere>
+      <a-sphere position="0.08 1.7 0.2" radius="0.04" color="#333333"></a-sphere>
+
+      <!-- Arms -->
+      <a-cylinder position="-0.45 0.9 0" radius="0.08" height="0.6" color="#4a90d9" rotation="0 0 20"></a-cylinder>
+      <a-cylinder position="0.45 0.9 0" radius="0.08" height="0.6" color="#4a90d9" rotation="0 0 -20"></a-cylinder>
+
+      <!-- Legs -->
+      <a-cylinder position="-0.15 0.25 0" radius="0.1" height="0.5" color="#2d5a87"></a-cylinder>
+      <a-cylinder position="0.15 0.25 0" radius="0.1" height="0.5" color="#2d5a87"></a-cylinder>
+    </a-entity>
+
+    <!-- Camera Rig with WASD movement -->
+    <a-entity id="rig" position="0 0 5" wasd-controls="acceleration: 30">
+      <a-camera position="0 1.6 0" look-controls>
+        <a-cursor color="#00d4ff" fuse="false"></a-cursor>
+      </a-camera>
+    </a-entity>
+
+    <!-- Decorative spinning cubes -->
+    <a-box position="-3 1.5 -6" width="0.5" height="0.5" depth="0.5" color="#ff6b6b"
+      animation="property: rotation; to: 0 360 0; loop: true; dur: 4000; easing: linear">
+    </a-box>
+
+    <a-box position="4 2 -8" width="0.7" height="0.7" depth="0.7" color="#4ecdc4"
+      animation="property: rotation; to: 360 0 360; loop: true; dur: 6000; easing: linear">
+    </a-box>
+
+    <a-box position="2 1 -5" width="0.4" height="0.4" depth="0.4" color="#ffe66d"
+      animation="property: rotation; to: 0 360 360; loop: true; dur: 5000; easing: linear">
+    </a-box>
+
+    <!-- Glowing pillars -->
+    <a-cylinder position="-5 1.5 -7" radius="0.3" height="3" color="#6c5ce7" opacity="0.8"></a-cylinder>
+    <a-cylinder position="5 1.5 -7" radius="0.3" height="3" color="#00cec9" opacity="0.8"></a-cylinder>
+
+  </a-scene>
+
+  <script>
+    // Hide loading screen when scene is ready
+    var scene = document.getElementById('scene');
+
+    scene.addEventListener('loaded', function () {
+      console.log('✅ A-Frame scene loaded successfully!');
+      document.getElementById('loading').classList.add('hidden');
+    });
+
+    // Hide UI in VR mode
+    scene.addEventListener('enter-vr', function () {
+      document.getElementById('ui-overlay').style.display = 'none';
+    });
+
+    scene.addEventListener('exit-vr', function () {
+      document.getElementById('ui-overlay').style.display = 'block';
+    });
+
+    // Character bobbing animation
+    var character = document.getElementById('character');
+    var time = 0;
+
+    function animateCharacter() {
+      time += 0.05;
+      var bobHeight = Math.sin(time) * 0.03;
+      character.setAttribute('position', '0 ' + bobHeight + ' -3');
+      requestAnimationFrame(animateCharacter);
+    }
+
+    if (character) {
+      animateCharacter();
+    }
+
+    // Timeout fallback to hide loading
+    setTimeout(function () {
+      document.getElementById('loading').classList.add('hidden');
+    }, 5000);
+
+    // Enter VR function
+    function enterVR() {
+      var scene = document.getElementById('scene');
+      if (scene.is('vr-mode')) {
+        scene.exitVR();
+      } else {
+        scene.enterVR().catch(function (err) {
+          alert('VR not available on this device/browser.\n\nTo use VR:\n1. Open this page on Quest 2 browser\n2. Or use a WebXR-compatible browser\n\nURL for Quest 2: ' + window.location.href);
+        });
+      }
+    }
+
+    // Make function globally available
+    window.enterVR = enterVR;
+  </script>
+</body>
+
+</html>
